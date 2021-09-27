@@ -1,9 +1,12 @@
 package request
 
 import (
+	"errors"
 	"github.com/PeterYangs/tools"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -14,11 +17,6 @@ type request struct {
 	params  map[string]interface{}
 	method  string
 	header  map[string]string
-}
-
-func (c *Client) R() *request {
-
-	return &request{client: c.client}
 }
 
 // Params 设置参数
@@ -86,7 +84,7 @@ func (r *request) resolveInterface(p map[string]interface{}, form string, parent
 
 }
 
-func (r *request) dealParams(p map[string]interface{}, form string, parentName []string) string {
+func (r *request) dealParams(form string) string {
 
 	if len(r.params) > 0 {
 
@@ -149,7 +147,21 @@ func (r *request) Do(r2 *http.Request) (*http.Response, error) {
 
 	}
 
-	return r.client.Do(r2)
+	rsp, err := r.client.Do(r2)
+
+	if err != nil {
+
+		return rsp, err
+	}
+
+	if rsp.StatusCode != 200 {
+
+		rsp.Body.Close()
+
+		return rsp, errors.New("status code :" + strconv.Itoa(rsp.StatusCode))
+	}
+
+	return rsp, err
 
 }
 
@@ -158,7 +170,7 @@ func (r *request) Get(url string) (*response, error) {
 
 	r.method = "GET"
 
-	url = r.dealParams(r.params, url, []string{})
+	url = r.dealParams(url)
 
 	req, err := http.NewRequest("GET", url, nil)
 
@@ -169,7 +181,7 @@ func (r *request) Get(url string) (*response, error) {
 
 	rsp, err := r.Do(req)
 
-	return &response{response: rsp}, nil
+	return &response{response: rsp}, err
 
 }
 
@@ -177,7 +189,7 @@ func (r *request) GetToContent(url string) (content, error) {
 
 	r.method = "GET"
 
-	url = r.dealParams(r.params, url, []string{})
+	url = r.dealParams(url)
 
 	req, err := http.NewRequest("GET", url, nil)
 
@@ -212,7 +224,7 @@ func (r *request) Post(url string) (*response, error) {
 
 	r.method = "POST"
 
-	p := r.dealParams(r.params, "", []string{})
+	p := r.dealParams("")
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(p))
 
@@ -225,7 +237,7 @@ func (r *request) Post(url string) (*response, error) {
 
 	rsp, err := r.Do(req)
 
-	return &response{response: rsp}, nil
+	return &response{response: rsp}, err
 
 }
 
@@ -233,7 +245,7 @@ func (r *request) PostToContent(url string) (content, error) {
 
 	r.method = "POST"
 
-	p := r.dealParams(r.params, "", []string{})
+	p := r.dealParams("")
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(p))
 
@@ -263,4 +275,63 @@ func (r *request) PostToContent(url string) (content, error) {
 	}
 
 	return content{content: bb}, nil
+}
+
+// Download 下载文件
+/**
+url 文件链接
+savePath 保存路径
+*/
+func (r *request) Download(url string, savePath string) error {
+
+	r.method = "GET"
+
+	url = r.dealParams(url)
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+
+		return err
+	}
+
+	rsp, err := r.Do(req)
+
+	if err != nil {
+
+		return err
+	}
+
+	defer rsp.Body.Close()
+
+	f, err := os.Create(savePath + ".temp")
+
+	if err != nil {
+
+		return err
+	}
+
+	defer func() {
+
+		os.Remove(savePath + ".temp")
+
+	}()
+
+	_, err = io.Copy(f, rsp.Body)
+
+	if err != nil {
+
+		f.Close()
+
+		return err
+	}
+
+	f.Close()
+
+	if err = os.Rename(savePath+".temp", savePath); err != nil {
+
+		return err
+	}
+
+	return nil
 }

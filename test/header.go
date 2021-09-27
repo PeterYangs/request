@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	client := request.NewClient()
+	client := request.NewClient().Header(map[string]string{"test": "demo"})
 
 	r, err := client.R().Params(map[string]interface{}{
 		"list":  "123",
@@ -18,7 +18,7 @@ func main() {
 			"age":   10,
 			"order": []string{"1", "2", "3"},
 		},
-	}).Header(map[string]string{"test": "demo"}).Get("http://list.com/demo/header.php")
+	}).Header(map[string]string{"test": "demo2"}).Get("http://list.com/demo/header.php")
 
 	if err != nil {
 
@@ -31,6 +31,38 @@ func main() {
 	//fmt.Println(r.Header())
 
 	content, err := r.Body().Content()
+
+	if err != nil {
+
+		fmt.Println(err)
+
+		return
+	}
+
+	fmt.Println(content.ToString())
+
+	r, err = client.R().Params(map[string]interface{}{
+		"list":  "123",
+		"array": []string{"123", "456"},
+		"form": map[string]interface{}{
+			"name":  "yy",
+			"email": "904801074@qq.com",
+			"age":   10,
+			"order": []string{"1", "2", "3"},
+		},
+	}).Get("http://list.com/demo/header.php")
+
+	if err != nil {
+
+		fmt.Println(err)
+
+		return
+	}
+
+	//响应头部
+	//fmt.Println(r.Header())
+
+	content, err = r.Body().Content()
 
 	if err != nil {
 
