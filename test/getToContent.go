@@ -30,6 +30,4 @@ func main() {
 
 	fmt.Println(content.ToString())
 
-	//fmt.Println(content.ToJsonMap())
-
 }
