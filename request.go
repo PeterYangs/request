@@ -98,7 +98,7 @@ func (r *request) do(r2 *http.Request) (*http.Response, error) {
 func (r *request) work(r2 *http.Request) (*http.Response, error) {
 
 	t := r.timeout
-
+	//
 	//默认超时时间
 	if t == 0 {
 
@@ -109,29 +109,9 @@ func (r *request) work(r2 *http.Request) (*http.Response, error) {
 
 	defer cancel()
 
-	ch := make(chan bool)
+	r2 = r2.WithContext(cxt)
 
-	var err error
-
-	var rsp *http.Response
-
-	go func() {
-
-		rsp, err = r.client.Do(r2)
-
-		ch <- true
-	}()
-
-	select {
-
-	case <-cxt.Done():
-
-		return rsp, errors.New(cxt.Err().Error() + ":" + r2.URL.String())
-
-	case <-ch:
-
-		return rsp, err
-	}
+	return r.client.Do(r2)
 
 }
 
@@ -304,6 +284,65 @@ func (r *request) Download(url string, savePath string) error {
 	}
 
 	return nil
+}
+
+// Upload 文件上传
+func (r *request) Upload(url string, filePath ...string) (content, error) {
+
+	r.method = "POST"
+
+	boundary := "285fa365bd76e6378f91f09f4eae20877246bbba4d31370d3c87b752d350" //可以自己设定，需要比较复杂的字符串作边界
+
+	picData := ""
+
+	for i, s := range filePath {
+
+		var data []byte
+
+		f, err := os.Open(s)
+
+		if err != nil {
+
+			return content{content: []byte{}}, err
+		}
+
+		data, err = ioutil.ReadAll(f)
+
+		if err != nil {
+
+			return content{content: []byte{}}, err
+		}
+
+		picData += "--" + boundary + "\n"
+		picData += "Content-Disposition: form-data; name=\"f" + strconv.Itoa(i) + "\"; filename=" + f.Name() + "\n"
+		picData += "Content-Type: application/octet-stream\n\n"
+		picData += string(data) + "\n"
+		picData += "--" + boundary + "\n"
+
+	}
+
+	req, err := http.NewRequest("POST", url, strings.NewReader(picData))
+
+	req.Header.Set("Content-Type", "multipart/form-data; boundary="+boundary)
+
+	rsp, err := r.do(req)
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+	}
+
+	defer rsp.Body.Close()
+
+	bb, err := ioutil.ReadAll(rsp.Body)
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+	}
+
+	return content{content: bb}, err
+
 }
 
 //解析参数拼接参数字符串
