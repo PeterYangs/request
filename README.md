@@ -5,7 +5,7 @@ http请求库
 **安装**
 
 ```shell
-go get github.com/PeterYangs/tools
+go get github.com/PeterYangs/request
 ```
 
 **快速开始**
