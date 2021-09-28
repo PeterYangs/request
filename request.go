@@ -102,6 +102,36 @@ func (r *request) GetToContent(url string) (content, error) {
 
 }
 
+func (r *request) GetToContentWithHeader(url string) (content, http.Header, error) {
+
+	r.method = "GET"
+
+	url = r.dealParams(url)
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+
+		return content{content: []byte{}}, map[string][]string{}, err
+	}
+
+	rsp, err := r.do(req)
+
+	if err != nil {
+
+		return content{content: []byte{}}, map[string][]string{}, err
+
+	}
+
+	b := r.body(rsp)
+
+	header := rsp.Header
+
+	c, err := b.Content()
+
+	return c, header, err
+}
+
 func (r *request) Post(url string) (*response, error) {
 
 	r.method = "POST"
