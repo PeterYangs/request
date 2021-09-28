@@ -96,17 +96,9 @@ func (r *request) GetToContent(url string) (content, error) {
 
 	}
 
-	defer rsp.Body.Close()
+	b := r.body(rsp)
 
-	bb, err := ioutil.ReadAll(rsp.Body)
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-
-	}
-
-	return content{content: bb}, nil
+	return b.Content()
 
 }
 
@@ -154,17 +146,9 @@ func (r *request) PostToContent(url string) (content, error) {
 
 	}
 
-	defer rsp.Body.Close()
+	b := r.body(rsp)
 
-	bb, err := ioutil.ReadAll(rsp.Body)
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-
-	}
-
-	return content{content: bb}, nil
+	return b.Content()
 }
 
 // Download 下载文件
@@ -440,12 +424,19 @@ func (r *request) work(r2 *http.Request) (*http.Response, error) {
 		t = 30 * time.Second
 	}
 
-	cxt, cancel := context.WithTimeout(context.Background(), t)
-
-	defer cancel()
+	cxt, _ := context.WithTimeout(context.Background(), t)
 
 	r2 = r2.WithContext(cxt)
 
 	return r.client.Do(r2)
+
+}
+
+func (r *request) body(rsp *http.Response) body {
+
+	return body{
+		body:   rsp.Body,
+		header: rsp.Header,
+	}
 
 }

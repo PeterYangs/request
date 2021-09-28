@@ -11,7 +11,8 @@ type response struct {
 func (r *response) Body() body {
 
 	return body{
-		body: r.response.Body,
+		body:   r.response.Body,
+		header: r.response.Header,
 	}
 }
 
