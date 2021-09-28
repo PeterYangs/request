@@ -1,6 +1,7 @@
 package request
 
 import (
+	"context"
 	"errors"
 	"github.com/PeterYangs/tools"
 	"io"
@@ -9,14 +10,17 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type request struct {
-	request *http.Response
-	client  *http.Client
-	params  map[string]interface{}
-	method  string
-	header  map[string]string
+	request    *http.Response
+	client     *http.Client
+	params     map[string]interface{}
+	method     string
+	header     map[string]string
+	retryTimes int
+	timeout    time.Duration
 }
 
 // Params 设置参数
@@ -33,6 +37,273 @@ func (r *request) Header(header map[string]string) *request {
 	r.header = header
 
 	return r
+}
+
+// ReTry 重试次数
+func (r *request) ReTry(times int) *request {
+
+	r.retryTimes = times
+
+	return r
+}
+
+func (r *request) Timeout(timeout time.Duration) *request {
+
+	r.timeout = timeout
+
+	return r
+
+}
+
+func (r *request) do(r2 *http.Request) (*http.Response, error) {
+
+	for s, s2 := range r.header {
+
+		r2.Header.Set(s, s2)
+
+	}
+
+	var err error
+
+	var rsp *http.Response
+
+	//错误重试
+	for i := 0; i < r.retryTimes+1; i++ {
+
+		rsp, err = r.work(r2)
+
+		if err != nil {
+
+			continue
+
+		}
+
+		if rsp.StatusCode != 200 {
+
+			rsp.Body.Close()
+
+			err = errors.New("status code :" + strconv.Itoa(rsp.StatusCode))
+
+			continue
+		}
+
+		return rsp, err
+
+	}
+
+	return rsp, err
+
+}
+
+func (r *request) work(r2 *http.Request) (*http.Response, error) {
+
+	t := r.timeout
+
+	//默认超时时间
+	if t == 0 {
+
+		t = 30 * time.Second
+	}
+
+	cxt, cancel := context.WithTimeout(context.Background(), t)
+
+	defer cancel()
+
+	ch := make(chan bool)
+
+	var err error
+
+	var rsp *http.Response
+
+	go func() {
+
+		rsp, err = r.client.Do(r2)
+
+		ch <- true
+	}()
+
+	select {
+
+	case <-cxt.Done():
+
+		return rsp, errors.New(cxt.Err().Error() + ":" + r2.URL.String())
+
+	case <-ch:
+
+		return rsp, err
+	}
+
+}
+
+// Get get请求
+func (r *request) Get(url string) (*response, error) {
+
+	r.method = "GET"
+
+	url = r.dealParams(url)
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+
+		return nil, err
+	}
+
+	rsp, err := r.do(req)
+
+	return &response{response: rsp}, err
+
+}
+
+func (r *request) GetToContent(url string) (content, error) {
+
+	r.method = "GET"
+
+	url = r.dealParams(url)
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+	}
+
+	rsp, err := r.do(req)
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+
+	}
+
+	defer rsp.Body.Close()
+
+	bb, err := ioutil.ReadAll(rsp.Body)
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+
+	}
+
+	return content{content: bb}, nil
+
+}
+
+func (r *request) Post(url string) (*response, error) {
+
+	r.method = "POST"
+
+	p := r.dealParams("")
+
+	req, err := http.NewRequest("POST", url, strings.NewReader(p))
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if err != nil {
+
+		return nil, err
+	}
+
+	rsp, err := r.do(req)
+
+	return &response{response: rsp}, err
+
+}
+
+func (r *request) PostToContent(url string) (content, error) {
+
+	r.method = "POST"
+
+	p := r.dealParams("")
+
+	req, err := http.NewRequest("POST", url, strings.NewReader(p))
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+	}
+
+	rsp, err := r.do(req)
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+
+	}
+
+	defer rsp.Body.Close()
+
+	bb, err := ioutil.ReadAll(rsp.Body)
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+
+	}
+
+	return content{content: bb}, nil
+}
+
+// Download 下载文件
+/**
+url 文件链接
+savePath 保存路径
+*/
+func (r *request) Download(url string, savePath string) error {
+
+	r.method = "GET"
+
+	url = r.dealParams(url)
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+
+		return err
+	}
+
+	rsp, err := r.do(req)
+
+	if err != nil {
+
+		return err
+	}
+
+	defer rsp.Body.Close()
+
+	f, err := os.Create(savePath + ".temp")
+
+	if err != nil {
+
+		return err
+	}
+
+	defer func() {
+
+		os.Remove(savePath + ".temp")
+
+	}()
+
+	_, err = io.Copy(f, rsp.Body)
+
+	if err != nil {
+
+		f.Close()
+
+		return err
+	}
+
+	f.Close()
+
+	if err = os.Rename(savePath+".temp", savePath); err != nil {
+
+		return err
+	}
+
+	return nil
 }
 
 //解析参数拼接参数字符串
@@ -137,201 +408,4 @@ func (r *request) getKey(parentName []string, ii string) string {
 
 	return f
 
-}
-
-func (r *request) Do(r2 *http.Request) (*http.Response, error) {
-
-	for s, s2 := range r.header {
-
-		r2.Header.Set(s, s2)
-
-	}
-
-	rsp, err := r.client.Do(r2)
-
-	if err != nil {
-
-		return rsp, err
-	}
-
-	if rsp.StatusCode != 200 {
-
-		rsp.Body.Close()
-
-		return rsp, errors.New("status code :" + strconv.Itoa(rsp.StatusCode))
-	}
-
-	return rsp, err
-
-}
-
-// Get get请求
-func (r *request) Get(url string) (*response, error) {
-
-	r.method = "GET"
-
-	url = r.dealParams(url)
-
-	req, err := http.NewRequest("GET", url, nil)
-
-	if err != nil {
-
-		return nil, err
-	}
-
-	rsp, err := r.Do(req)
-
-	return &response{response: rsp}, err
-
-}
-
-func (r *request) GetToContent(url string) (content, error) {
-
-	r.method = "GET"
-
-	url = r.dealParams(url)
-
-	req, err := http.NewRequest("GET", url, nil)
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-	}
-
-	rsp, err := r.Do(req)
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-
-	}
-
-	defer rsp.Body.Close()
-
-	bb, err := ioutil.ReadAll(rsp.Body)
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-
-	}
-
-	return content{content: bb}, nil
-
-}
-
-func (r *request) Post(url string) (*response, error) {
-
-	r.method = "POST"
-
-	p := r.dealParams("")
-
-	req, err := http.NewRequest("POST", url, strings.NewReader(p))
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	if err != nil {
-
-		return nil, err
-	}
-
-	rsp, err := r.Do(req)
-
-	return &response{response: rsp}, err
-
-}
-
-func (r *request) PostToContent(url string) (content, error) {
-
-	r.method = "POST"
-
-	p := r.dealParams("")
-
-	req, err := http.NewRequest("POST", url, strings.NewReader(p))
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-	}
-
-	rsp, err := r.Do(req)
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-
-	}
-
-	defer rsp.Body.Close()
-
-	bb, err := ioutil.ReadAll(rsp.Body)
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-
-	}
-
-	return content{content: bb}, nil
-}
-
-// Download 下载文件
-/**
-url 文件链接
-savePath 保存路径
-*/
-func (r *request) Download(url string, savePath string) error {
-
-	r.method = "GET"
-
-	url = r.dealParams(url)
-
-	req, err := http.NewRequest("GET", url, nil)
-
-	if err != nil {
-
-		return err
-	}
-
-	rsp, err := r.Do(req)
-
-	if err != nil {
-
-		return err
-	}
-
-	defer rsp.Body.Close()
-
-	f, err := os.Create(savePath + ".temp")
-
-	if err != nil {
-
-		return err
-	}
-
-	defer func() {
-
-		os.Remove(savePath + ".temp")
-
-	}()
-
-	_, err = io.Copy(f, rsp.Body)
-
-	if err != nil {
-
-		f.Close()
-
-		return err
-	}
-
-	f.Close()
-
-	if err = os.Rename(savePath+".temp", savePath); err != nil {
-
-		return err
-	}
-
-	return nil
 }

@@ -27,8 +27,6 @@ func (c *Client) Header(header map[string]string) *Client {
 
 func (c *Client) Proxy(proxyUrl string) *Client {
 
-	//uri, _ := url.Parse(proxyUrl)
-
 	c.client.Transport = &http.Transport{
 		Proxy: func(r *http.Request) (*url.URL, error) {
 

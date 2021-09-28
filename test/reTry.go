@@ -7,9 +7,9 @@ import (
 
 func main() {
 
-	client := request.NewClient().Proxy("http://127.0.0.1:4780")
+	client := request.NewClient()
 
-	content, err := client.R().GetToContent("https://www.google.com.hk/")
+	content, err := client.R().ReTry(1).GetToContent("http://list.com/asdjk.php")
 
 	if err != nil {
 
