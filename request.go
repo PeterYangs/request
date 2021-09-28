@@ -55,66 +55,6 @@ func (r *request) Timeout(timeout time.Duration) *request {
 
 }
 
-func (r *request) do(r2 *http.Request) (*http.Response, error) {
-
-	for s, s2 := range r.header {
-
-		r2.Header.Set(s, s2)
-
-	}
-
-	var err error
-
-	var rsp *http.Response
-
-	//错误重试
-	for i := 0; i < r.retryTimes+1; i++ {
-
-		rsp, err = r.work(r2)
-
-		if err != nil {
-
-			continue
-
-		}
-
-		if rsp.StatusCode != 200 {
-
-			rsp.Body.Close()
-
-			err = errors.New("status code :" + strconv.Itoa(rsp.StatusCode))
-
-			continue
-		}
-
-		return rsp, err
-
-	}
-
-	return rsp, err
-
-}
-
-func (r *request) work(r2 *http.Request) (*http.Response, error) {
-
-	t := r.timeout
-	//
-	//默认超时时间
-	if t == 0 {
-
-		t = 30 * time.Second
-	}
-
-	cxt, cancel := context.WithTimeout(context.Background(), t)
-
-	defer cancel()
-
-	r2 = r2.WithContext(cxt)
-
-	return r.client.Do(r2)
-
-}
-
 // Get get请求
 func (r *request) Get(url string) (*response, error) {
 
@@ -446,5 +386,65 @@ func (r *request) getKey(parentName []string, ii string) string {
 	}
 
 	return f
+
+}
+
+func (r *request) do(r2 *http.Request) (*http.Response, error) {
+
+	for s, s2 := range r.header {
+
+		r2.Header.Set(s, s2)
+
+	}
+
+	var err error
+
+	var rsp *http.Response
+
+	//错误重试
+	for i := 0; i < r.retryTimes+1; i++ {
+
+		rsp, err = r.work(r2)
+
+		if err != nil {
+
+			continue
+
+		}
+
+		if rsp.StatusCode != 200 {
+
+			rsp.Body.Close()
+
+			err = errors.New("status code :" + strconv.Itoa(rsp.StatusCode))
+
+			continue
+		}
+
+		return rsp, err
+
+	}
+
+	return rsp, err
+
+}
+
+func (r *request) work(r2 *http.Request) (*http.Response, error) {
+
+	t := r.timeout
+	//
+	//默认超时时间
+	if t == 0 {
+
+		t = 30 * time.Second
+	}
+
+	cxt, cancel := context.WithTimeout(context.Background(), t)
+
+	defer cancel()
+
+	r2 = r2.WithContext(cxt)
+
+	return r.client.Do(r2)
 
 }
