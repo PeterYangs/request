@@ -285,6 +285,7 @@ func (r *request) Upload(url string, filePath ...string) (content, error) {
 
 }
 
+//------------------------------------------------------------------------------------------------------------
 //解析参数拼接参数字符串
 func (r *request) resolveInterface(p map[string]interface{}, form string, parentName []string) string {
 
