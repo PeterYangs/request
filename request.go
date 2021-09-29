@@ -62,7 +62,7 @@ func (r *request) Get(url string) (*response, error) {
 
 	url = r.dealParams(url)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(r.method, url, nil)
 
 	if err != nil {
 
@@ -81,7 +81,7 @@ func (r *request) GetToContent(url string) (content, error) {
 
 	url = r.dealParams(url)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(r.method, url, nil)
 
 	if err != nil {
 
@@ -108,7 +108,7 @@ func (r *request) GetToContentWithHeader(url string) (content, http.Header, erro
 
 	url = r.dealParams(url)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(r.method, url, nil)
 
 	if err != nil {
 
@@ -138,7 +138,7 @@ func (r *request) Post(url string) (*response, error) {
 
 	p := r.dealParams("")
 
-	req, err := http.NewRequest("POST", url, strings.NewReader(p))
+	req, err := http.NewRequest(r.method, url, strings.NewReader(p))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -159,9 +159,106 @@ func (r *request) PostToContent(url string) (content, error) {
 
 	p := r.dealParams("")
 
-	req, err := http.NewRequest("POST", url, strings.NewReader(p))
+	req, err := http.NewRequest(r.method, url, strings.NewReader(p))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+	}
+
+	rsp, err := r.do(req)
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+
+	}
+
+	b := r.body(rsp)
+
+	return b.Content()
+}
+
+func (r *request) Put(url string) (*response, error) {
+
+	//http.Method
+
+	r.method = "PUT"
+
+	p := r.dealParams("")
+
+	req, err := http.NewRequest(r.method, url, strings.NewReader(p))
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if err != nil {
+
+		return nil, err
+	}
+
+	rsp, err := r.do(req)
+
+	return &response{response: rsp}, err
+
+}
+
+func (r *request) PutToContent(url string) (content, error) {
+
+	r.method = "PUT"
+
+	p := r.dealParams("")
+
+	req, err := http.NewRequest(r.method, url, strings.NewReader(p))
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+	}
+
+	rsp, err := r.do(req)
+
+	if err != nil {
+
+		return content{content: []byte{}}, err
+
+	}
+
+	b := r.body(rsp)
+
+	return b.Content()
+
+}
+
+func (r *request) Delete(url string) (*response, error) {
+
+	r.method = "DELETE"
+
+	url = r.dealParams(url)
+
+	req, err := http.NewRequest(r.method, url, nil)
+
+	if err != nil {
+
+		return nil, err
+	}
+
+	rsp, err := r.do(req)
+
+	return &response{response: rsp}, err
+
+}
+
+func (r *request) DeleteToContent(url string) (content, error) {
+
+	r.method = "DELETE"
+
+	url = r.dealParams(url)
+
+	req, err := http.NewRequest(r.method, url, nil)
 
 	if err != nil {
 
@@ -353,7 +450,7 @@ func (r *request) dealParams(form string) string {
 
 	if len(r.params) > 0 {
 
-		if r.method == "GET" {
+		if r.method == "GET" || r.method == "DELETE" {
 
 			form += "?"
 		}
@@ -429,9 +526,11 @@ func (r *request) do(r2 *http.Request) (*http.Response, error) {
 
 		if rsp.StatusCode != 200 {
 
+			msg, _ := ioutil.ReadAll(rsp.Body)
+
 			rsp.Body.Close()
 
-			err = errors.New("status code :" + strconv.Itoa(rsp.StatusCode))
+			err = errors.New("status code :" + strconv.Itoa(rsp.StatusCode) + "\n" + string(msg))
 
 			continue
 		}
