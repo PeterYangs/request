@@ -7,9 +7,10 @@ import (
 )
 
 type Client struct {
-	client  *http.Client
-	header  map[string]string
-	timeout time.Duration
+	client     *http.Client
+	header     map[string]string
+	timeout    time.Duration
+	retryTimes int
 }
 
 func NewClient() *Client {
@@ -42,6 +43,14 @@ func (c *Client) Proxy(proxyUrl string) *Client {
 func (c *Client) Timeout(timeout time.Duration) *Client {
 
 	c.timeout = timeout
+
+	return c
+
+}
+
+func (c *Client) ReTry(times int) *Client {
+
+	c.retryTimes = times
 
 	return c
 

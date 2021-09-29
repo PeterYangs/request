@@ -26,9 +26,10 @@ type request struct {
 func newRequest(c *Client) *request {
 
 	r := &request{
-		client:  c,
-		header:  c.header,
-		timeout: c.timeout,
+		client:     c,
+		header:     c.header,
+		timeout:    c.timeout,
+		retryTimes: c.retryTimes,
 	}
 
 	return r
