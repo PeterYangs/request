@@ -11,6 +11,7 @@ type Client struct {
 	header     map[string]string
 	timeout    time.Duration
 	retryTimes int
+	debug      bool
 }
 
 func NewClient() *Client {
@@ -51,6 +52,14 @@ func (c *Client) Timeout(timeout time.Duration) *Client {
 func (c *Client) ReTry(times int) *Client {
 
 	c.retryTimes = times
+
+	return c
+
+}
+
+func (c *Client) Debug() *Client {
+
+	c.debug = true
 
 	return c
 

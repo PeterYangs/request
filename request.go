@@ -538,11 +538,19 @@ func (r *request) do(r2 *http.Request) (*http.Response, error) {
 
 		if rsp.StatusCode != 200 {
 
-			msg, _ := ioutil.ReadAll(rsp.Body)
+			msg := ""
+
+			if r.client.debug {
+
+				b, _ := ioutil.ReadAll(rsp.Body)
+
+				msg = "\n" + string(b)
+
+			}
 
 			rsp.Body.Close()
 
-			err = errors.New("status code :" + strconv.Itoa(rsp.StatusCode) + "\n" + string(msg))
+			err = errors.New("status code :" + strconv.Itoa(rsp.StatusCode) + msg)
 
 			continue
 		}
