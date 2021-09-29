@@ -3,11 +3,13 @@ package request
 import (
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type Client struct {
-	client *http.Client
-	header map[string]string
+	client  *http.Client
+	header  map[string]string
+	timeout time.Duration
 }
 
 func NewClient() *Client {
@@ -37,7 +39,15 @@ func (c *Client) Proxy(proxyUrl string) *Client {
 	return c
 }
 
+func (c *Client) Timeout(timeout time.Duration) *Client {
+
+	c.timeout = timeout
+
+	return c
+
+}
+
 func (c *Client) R() *request {
 
-	return &request{client: c.client, header: c.header}
+	return newRequest(c)
 }

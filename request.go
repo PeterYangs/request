@@ -15,12 +15,23 @@ import (
 
 type request struct {
 	request    *http.Response
-	client     *http.Client
+	client     *Client
 	params     map[string]interface{}
 	method     string
 	header     map[string]string
 	retryTimes int
 	timeout    time.Duration
+}
+
+func newRequest(c *Client) *request {
+
+	r := &request{
+		client:  c,
+		header:  c.header,
+		timeout: c.timeout,
+	}
+
+	return r
 }
 
 // Params 设置参数
@@ -557,7 +568,7 @@ func (r *request) work(r2 *http.Request) (*http.Response, error) {
 
 	r2 = r2.WithContext(cxt)
 
-	return r.client.Do(r2)
+	return r.client.client.Do(r2)
 
 }
 
