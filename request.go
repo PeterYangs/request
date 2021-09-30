@@ -22,6 +22,7 @@ type request struct {
 	header     map[string]string
 	retryTimes int
 	timeout    time.Duration
+	url        string
 }
 
 func newRequest(c *Client) *request {
@@ -80,9 +81,9 @@ func (r *request) Get(url string) (*response, error) {
 
 	r.method = "GET"
 
-	query, params := r.dealParamsAndQuery()
+	r.url = url
 
-	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
+	req, err := r.dealRequest()
 
 	if err != nil {
 
@@ -99,9 +100,9 @@ func (r *request) GetToContent(url string) (content, error) {
 
 	r.method = "GET"
 
-	query, params := r.dealParamsAndQuery()
+	r.url = url
 
-	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
+	req, err := r.dealRequest()
 
 	if err != nil {
 
@@ -126,9 +127,9 @@ func (r *request) GetToContentWithHeader(url string) (content, http.Header, erro
 
 	r.method = "GET"
 
-	query, params := r.dealParamsAndQuery()
+	r.url = url
 
-	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
+	req, err := r.dealRequest()
 
 	if err != nil {
 
@@ -156,11 +157,9 @@ func (r *request) Post(url string) (*response, error) {
 
 	r.method = "POST"
 
-	query, params := r.dealParamsAndQuery()
+	r.url = url
 
-	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req, err := r.dealRequest()
 
 	if err != nil {
 
@@ -177,11 +176,9 @@ func (r *request) PostToContent(url string) (content, error) {
 
 	r.method = "POST"
 
-	query, params := r.dealParamsAndQuery()
+	r.url = url
 
-	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req, err := r.dealRequest()
 
 	if err != nil {
 
@@ -203,15 +200,11 @@ func (r *request) PostToContent(url string) (content, error) {
 
 func (r *request) Put(url string) (*response, error) {
 
-	//http.Method
-
 	r.method = "PUT"
 
-	query, params := r.dealParamsAndQuery()
+	r.url = url
 
-	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req, err := r.dealRequest()
 
 	if err != nil {
 
@@ -228,11 +221,9 @@ func (r *request) PutToContent(url string) (content, error) {
 
 	r.method = "PUT"
 
-	query, params := r.dealParamsAndQuery()
+	r.url = url
 
-	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req, err := r.dealRequest()
 
 	if err != nil {
 
@@ -257,9 +248,9 @@ func (r *request) Delete(url string) (*response, error) {
 
 	r.method = "DELETE"
 
-	query, params := r.dealParamsAndQuery()
+	r.url = url
 
-	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
+	req, err := r.dealRequest()
 
 	if err != nil {
 
@@ -276,9 +267,9 @@ func (r *request) DeleteToContent(url string) (content, error) {
 
 	r.method = "DELETE"
 
-	query, params := r.dealParamsAndQuery()
+	r.url = url
 
-	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
+	req, err := r.dealRequest()
 
 	if err != nil {
 
@@ -307,9 +298,12 @@ func (r *request) Download(url string, savePath string) error {
 
 	r.method = "GET"
 
-	query, params := r.dealParamsAndQuery()
+	r.url = url
+	//query, params := r.dealParamsAndQuery()
+	//
+	//req, err := http.NewRequest("GET", url+query, strings.NewReader(params))
 
-	req, err := http.NewRequest("GET", url+query, strings.NewReader(params))
+	req, err := r.dealRequest()
 
 	if err != nil {
 
@@ -474,11 +468,6 @@ func (r *request) dealParamsAndQuery() (string, string) {
 
 	if len(r.query) > 0 {
 
-		//if r.method == "GET" || r.method == "DELETE" {
-		//
-		//	form += "?"
-		//}
-
 		query += "?"
 
 		query = r.resolveInterface(r.query, query, []string{})
@@ -487,8 +476,6 @@ func (r *request) dealParamsAndQuery() (string, string) {
 
 			query = tools.SubStr(query, 0, -2)
 		}
-
-		//return form
 
 	}
 
@@ -612,5 +599,32 @@ func (r *request) body(rsp *http.Response) body {
 		body:   rsp.Body,
 		header: rsp.Header,
 	}
+
+}
+
+func (r *request) dealRequest() (*http.Request, error) {
+
+	query, params := r.dealParamsAndQuery()
+
+	req, err := http.NewRequest(r.method, r.url+query, strings.NewReader(params))
+
+	if err != nil {
+
+		return nil, err
+	}
+
+	switch r.method {
+
+	case "POST":
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	case "PUT":
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	}
+
+	return req, nil
 
 }
