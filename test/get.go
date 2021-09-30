@@ -9,7 +9,7 @@ func main() {
 
 	client := request.NewClient()
 
-	r, err := client.R().Params(map[string]interface{}{
+	r, err := client.R().Query(map[string]interface{}{
 		"list":  "123",
 		"array": []string{"123", "456"},
 		"form": map[string]interface{}{

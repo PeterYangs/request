@@ -17,6 +17,7 @@ type request struct {
 	request    *http.Response
 	client     *Client
 	params     map[string]interface{}
+	query      map[string]interface{}
 	method     string
 	header     map[string]string
 	retryTimes int
@@ -42,6 +43,13 @@ func (r *request) Params(p map[string]interface{}) *request {
 
 	return r
 
+}
+
+func (r *request) Query(p map[string]interface{}) *request {
+
+	r.query = p
+
+	return r
 }
 
 func (r *request) Header(header map[string]string) *request {
@@ -72,9 +80,9 @@ func (r *request) Get(url string) (*response, error) {
 
 	r.method = "GET"
 
-	url = r.dealParams(url)
+	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest(r.method, url, nil)
+	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
 
 	if err != nil {
 
@@ -91,9 +99,9 @@ func (r *request) GetToContent(url string) (content, error) {
 
 	r.method = "GET"
 
-	url = r.dealParams(url)
+	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest(r.method, url, nil)
+	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
 
 	if err != nil {
 
@@ -118,9 +126,9 @@ func (r *request) GetToContentWithHeader(url string) (content, http.Header, erro
 
 	r.method = "GET"
 
-	url = r.dealParams(url)
+	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest(r.method, url, nil)
+	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
 
 	if err != nil {
 
@@ -148,9 +156,9 @@ func (r *request) Post(url string) (*response, error) {
 
 	r.method = "POST"
 
-	p := r.dealParams("")
+	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest(r.method, url, strings.NewReader(p))
+	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -169,9 +177,9 @@ func (r *request) PostToContent(url string) (content, error) {
 
 	r.method = "POST"
 
-	p := r.dealParams("")
+	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest(r.method, url, strings.NewReader(p))
+	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -199,9 +207,9 @@ func (r *request) Put(url string) (*response, error) {
 
 	r.method = "PUT"
 
-	p := r.dealParams("")
+	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest(r.method, url, strings.NewReader(p))
+	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -220,9 +228,9 @@ func (r *request) PutToContent(url string) (content, error) {
 
 	r.method = "PUT"
 
-	p := r.dealParams("")
+	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest(r.method, url, strings.NewReader(p))
+	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -249,9 +257,9 @@ func (r *request) Delete(url string) (*response, error) {
 
 	r.method = "DELETE"
 
-	url = r.dealParams(url)
+	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest(r.method, url, nil)
+	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
 
 	if err != nil {
 
@@ -268,9 +276,9 @@ func (r *request) DeleteToContent(url string) (content, error) {
 
 	r.method = "DELETE"
 
-	url = r.dealParams(url)
+	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest(r.method, url, nil)
+	req, err := http.NewRequest(r.method, url+query, strings.NewReader(params))
 
 	if err != nil {
 
@@ -299,9 +307,9 @@ func (r *request) Download(url string, savePath string) error {
 
 	r.method = "GET"
 
-	url = r.dealParams(url)
+	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url+query, strings.NewReader(params))
 
 	if err != nil {
 
@@ -458,27 +466,44 @@ func (r *request) resolveInterface(p map[string]interface{}, form string, parent
 
 }
 
-func (r *request) dealParams(form string) string {
+func (r *request) dealParamsAndQuery() (string, string) {
 
-	if len(r.params) > 0 {
+	query := ""
 
-		if r.method == "GET" || r.method == "DELETE" {
+	params := ""
 
-			form += "?"
+	if len(r.query) > 0 {
+
+		//if r.method == "GET" || r.method == "DELETE" {
+		//
+		//	form += "?"
+		//}
+
+		query += "?"
+
+		query = r.resolveInterface(r.query, query, []string{})
+
+		if tools.SubStr(query, -1, -1) == "&" {
+
+			query = tools.SubStr(query, 0, -2)
 		}
 
-		form = r.resolveInterface(r.params, form, []string{})
-
-		if tools.SubStr(form, -1, -1) == "&" {
-
-			form = tools.SubStr(form, 0, -2)
-		}
-
-		return form
+		//return form
 
 	}
 
-	return form
+	if len(r.params) > 0 {
+
+		params = r.resolveInterface(r.params, params, []string{})
+
+		if tools.SubStr(params, -1, -1) == "&" {
+
+			params = tools.SubStr(params, 0, -2)
+		}
+
+	}
+
+	return query, params
 }
 
 func (r *request) getKey(parentName []string, ii string) string {

@@ -148,8 +148,6 @@ func main() {
 
 }
 ```
-get也可以设置Params,会添加到url地址上
-
 
 **header**
 ```go
