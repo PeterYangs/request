@@ -562,7 +562,7 @@ func (r *request) do(r2 *http.Request) (*http.Response, error) {
 
 			rsp.Body.Close()
 
-			err = errors.New("status code :" + strconv.Itoa(rsp.StatusCode) + msg)
+			err = errors.New("status code :" + strconv.Itoa(rsp.StatusCode) + "," + r2.URL.String() + msg)
 
 			continue
 		}

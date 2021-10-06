@@ -18,7 +18,7 @@ func main() {
 			"age":   10,
 			"order": []string{"1", "2", "3"},
 		},
-	}).Get("http://list.com/demo/get.php")
+	}).Get("http://list.com/demo/gets.php")
 
 	if err != nil {
 
