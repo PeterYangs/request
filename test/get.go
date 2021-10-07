@@ -18,7 +18,7 @@ func main() {
 			"age":   10,
 			"order": []string{"1", "2", "3"},
 		},
-	}).Get("http://list.com/demo/gets.php")
+	}).Get("http://list.com/demo/get.php")
 
 	if err != nil {
 
@@ -28,7 +28,7 @@ func main() {
 	}
 
 	//响应头部
-	fmt.Println(r.Header())
+	//fmt.Println(r.Header())
 
 	content, err := r.Body().Content()
 

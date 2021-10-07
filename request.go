@@ -23,6 +23,7 @@ type request struct {
 	retryTimes int
 	timeout    time.Duration
 	url        string
+	body       io.Reader
 }
 
 func newRequest(c *Client) *request {
@@ -37,7 +38,7 @@ func newRequest(c *Client) *request {
 	return r
 }
 
-// Params 设置参数
+// Params 设置参数(body设置后，Params会失效)
 func (r *request) Params(p map[string]interface{}) *request {
 
 	r.params = p
@@ -76,12 +77,15 @@ func (r *request) Timeout(timeout time.Duration) *request {
 
 }
 
-// Get get请求
-func (r *request) Get(url string) (*response, error) {
+// Body body设置后，Params会失效
+func (r *request) Body(b io.Reader) *request {
 
-	r.method = "GET"
+	r.body = b
 
-	r.url = url
+	return r
+}
+
+func (r *request) Request(method string, url string) (*response, error) {
 
 	req, err := r.dealRequest()
 
@@ -96,28 +100,52 @@ func (r *request) Get(url string) (*response, error) {
 
 }
 
+// Get get请求
+func (r *request) Get(url string) (*response, error) {
+
+	r.method = "GET"
+
+	r.url = url
+
+	return r.Request(r.method, r.url)
+
+	//req, err := r.dealRequest()
+	//
+	//if err != nil {
+	//
+	//	return nil, err
+	//}
+	//
+	//rsp, err := r.do(req)
+	//
+	//return &response{response: rsp}, err
+
+}
+
 func (r *request) GetToContent(url string) (content, error) {
 
 	r.method = "GET"
 
 	r.url = url
 
-	req, err := r.dealRequest()
+	rsp, err := r.Request(r.method, r.url)
+
+	//req, err := r.dealRequest()
+	//
+	//if err != nil {
+	//
+	//	return content{content: []byte{}}, err
+	//}
+	//
+	//rsp, err := r.do(req)
 
 	if err != nil {
 
 		return content{content: []byte{}}, err
-	}
-
-	rsp, err := r.do(req)
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
 
 	}
 
-	b := r.body(rsp)
+	b := r.toBody(rsp.response)
 
 	return b.Content()
 
@@ -129,24 +157,26 @@ func (r *request) GetToContentWithHeader(url string) (content, http.Header, erro
 
 	r.url = url
 
-	req, err := r.dealRequest()
+	//req, err := r.dealRequest()
+	//
+	//if err != nil {
+	//
+	//	return content{content: []byte{}}, map[string][]string{}, err
+	//}
+	//
+	//rsp, err := r.do(req)
+
+	rsp, err := r.Request(r.method, r.url)
 
 	if err != nil {
 
 		return content{content: []byte{}}, map[string][]string{}, err
-	}
-
-	rsp, err := r.do(req)
-
-	if err != nil {
-
-		return content{content: []byte{}}, map[string][]string{}, err
 
 	}
 
-	b := r.body(rsp)
+	b := r.toBody(rsp.response)
 
-	header := rsp.Header
+	header := rsp.response.Header
 
 	c, err := b.Content()
 
@@ -159,16 +189,9 @@ func (r *request) Post(url string) (*response, error) {
 
 	r.url = url
 
-	req, err := r.dealRequest()
+	rsp, err := r.Request(r.method, r.url)
 
-	if err != nil {
-
-		return nil, err
-	}
-
-	rsp, err := r.do(req)
-
-	return &response{response: rsp}, err
+	return &response{response: rsp.response}, err
 
 }
 
@@ -178,14 +201,7 @@ func (r *request) PostToContent(url string) (content, error) {
 
 	r.url = url
 
-	req, err := r.dealRequest()
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-	}
-
-	rsp, err := r.do(req)
+	rsp, err := r.Request(r.method, r.url)
 
 	if err != nil {
 
@@ -193,7 +209,7 @@ func (r *request) PostToContent(url string) (content, error) {
 
 	}
 
-	b := r.body(rsp)
+	b := r.toBody(rsp.response)
 
 	return b.Content()
 }
@@ -204,16 +220,9 @@ func (r *request) Put(url string) (*response, error) {
 
 	r.url = url
 
-	req, err := r.dealRequest()
+	rsp, err := r.Request(r.method, r.url)
 
-	if err != nil {
-
-		return nil, err
-	}
-
-	rsp, err := r.do(req)
-
-	return &response{response: rsp}, err
+	return &response{response: rsp.response}, err
 
 }
 
@@ -223,14 +232,7 @@ func (r *request) PutToContent(url string) (content, error) {
 
 	r.url = url
 
-	req, err := r.dealRequest()
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-	}
-
-	rsp, err := r.do(req)
+	rsp, err := r.Request(r.method, r.url)
 
 	if err != nil {
 
@@ -238,7 +240,7 @@ func (r *request) PutToContent(url string) (content, error) {
 
 	}
 
-	b := r.body(rsp)
+	b := r.toBody(rsp.response)
 
 	return b.Content()
 
@@ -250,16 +252,9 @@ func (r *request) Delete(url string) (*response, error) {
 
 	r.url = url
 
-	req, err := r.dealRequest()
+	rsp, err := r.Request(r.method, r.url)
 
-	if err != nil {
-
-		return nil, err
-	}
-
-	rsp, err := r.do(req)
-
-	return &response{response: rsp}, err
+	return &response{response: rsp.response}, err
 
 }
 
@@ -269,14 +264,7 @@ func (r *request) DeleteToContent(url string) (content, error) {
 
 	r.url = url
 
-	req, err := r.dealRequest()
-
-	if err != nil {
-
-		return content{content: []byte{}}, err
-	}
-
-	rsp, err := r.do(req)
+	rsp, err := r.Request(r.method, r.url)
 
 	if err != nil {
 
@@ -284,7 +272,7 @@ func (r *request) DeleteToContent(url string) (content, error) {
 
 	}
 
-	b := r.body(rsp)
+	b := r.toBody(rsp.response)
 
 	return b.Content()
 }
@@ -303,21 +291,14 @@ func (r *request) Download(url string, savePath string) error {
 	//
 	//req, err := http.NewRequest("GET", url+query, strings.NewReader(params))
 
-	req, err := r.dealRequest()
+	rsp, err := r.Request(r.method, r.url)
 
 	if err != nil {
 
 		return err
 	}
 
-	rsp, err := r.do(req)
-
-	if err != nil {
-
-		return err
-	}
-
-	defer rsp.Body.Close()
+	defer rsp.response.Body.Close()
 
 	f, err := os.Create(savePath + ".temp")
 
@@ -332,7 +313,7 @@ func (r *request) Download(url string, savePath string) error {
 
 	}()
 
-	_, err = io.Copy(f, rsp.Body)
+	_, err = io.Copy(f, rsp.response.Body)
 
 	if err != nil {
 
@@ -593,7 +574,7 @@ func (r *request) work(r2 *http.Request) (*http.Response, error) {
 
 }
 
-func (r *request) body(rsp *http.Response) body {
+func (r *request) toBody(rsp *http.Response) body {
 
 	return body{
 		body:   rsp.Body,
@@ -606,7 +587,18 @@ func (r *request) dealRequest() (*http.Request, error) {
 
 	query, params := r.dealParamsAndQuery()
 
-	req, err := http.NewRequest(r.method, r.url+query, strings.NewReader(params))
+	var req *http.Request
+
+	var err error
+
+	if r.body != nil {
+
+		req, err = http.NewRequest(r.method, r.url+query, r.body)
+
+	} else {
+
+		req, err = http.NewRequest(r.method, r.url+query, strings.NewReader(params))
+	}
 
 	if err != nil {
 
