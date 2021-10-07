@@ -109,17 +109,6 @@ func (r *request) Get(url string) (*response, error) {
 
 	return r.Request(r.method, r.url)
 
-	//req, err := r.dealRequest()
-	//
-	//if err != nil {
-	//
-	//	return nil, err
-	//}
-	//
-	//rsp, err := r.do(req)
-	//
-	//return &response{response: rsp}, err
-
 }
 
 func (r *request) GetToContent(url string) (content, error) {
@@ -129,15 +118,6 @@ func (r *request) GetToContent(url string) (content, error) {
 	r.url = url
 
 	rsp, err := r.Request(r.method, r.url)
-
-	//req, err := r.dealRequest()
-	//
-	//if err != nil {
-	//
-	//	return content{content: []byte{}}, err
-	//}
-	//
-	//rsp, err := r.do(req)
 
 	if err != nil {
 
@@ -156,15 +136,6 @@ func (r *request) GetToContentWithHeader(url string) (content, http.Header, erro
 	r.method = "GET"
 
 	r.url = url
-
-	//req, err := r.dealRequest()
-	//
-	//if err != nil {
-	//
-	//	return content{content: []byte{}}, map[string][]string{}, err
-	//}
-	//
-	//rsp, err := r.do(req)
 
 	rsp, err := r.Request(r.method, r.url)
 
@@ -287,9 +258,6 @@ func (r *request) Download(url string, savePath string) error {
 	r.method = "GET"
 
 	r.url = url
-	//query, params := r.dealParamsAndQuery()
-	//
-	//req, err := http.NewRequest("GET", url+query, strings.NewReader(params))
 
 	rsp, err := r.Request(r.method, r.url)
 

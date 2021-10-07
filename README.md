@@ -303,7 +303,7 @@ import (
 func main() {
 
 	client := request.NewClient()
-
+    //设置body后，Params将失效
 	content, err := client.R().Body(strings.NewReader("name=123&age=18")).PostToContent("http://list.com/demo/post.php")
 
 	if err != nil {
