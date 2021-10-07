@@ -8,8 +8,9 @@ import (
 )
 
 type body struct {
-	body   io.ReadCloser
-	header http.Header
+	body    io.ReadCloser
+	header  http.Header
+	request *request
 }
 
 func (b body) Content() (content, error) {
@@ -40,5 +41,5 @@ func (b body) Content() (content, error) {
 		return content{content: []byte{}}, err
 	}
 
-	return content{content: bb}, nil
+	return content{content: bb, request: b.request}, nil
 }

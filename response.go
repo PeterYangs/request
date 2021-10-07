@@ -6,13 +6,15 @@ import (
 
 type response struct {
 	response *http.Response
+	request  *request
 }
 
 func (r *response) Body() body {
 
 	return body{
-		body:   r.response.Body,
-		header: r.response.Header,
+		body:    r.response.Body,
+		header:  r.response.Header,
+		request: r.request,
 	}
 }
 

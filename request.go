@@ -14,16 +14,19 @@ import (
 )
 
 type request struct {
-	request    *http.Response
-	client     *Client
-	params     map[string]interface{}
-	query      map[string]interface{}
-	method     string
-	header     map[string]string
-	retryTimes int
-	timeout    time.Duration
-	url        string
-	body       io.Reader
+	//request    *http.Response
+	client       *Client
+	params       map[string]interface{}
+	query        map[string]interface{}
+	method       string
+	header       map[string]string
+	retryTimes   int
+	timeout      time.Duration
+	url          string
+	body         io.Reader
+	startTime    time.Time
+	endTime      time.Time
+	responseTime time.Duration
 }
 
 func newRequest(c *Client) *request {
@@ -85,7 +88,11 @@ func (r *request) Body(b io.Reader) *request {
 	return r
 }
 
+// Request 底层请求封装
 func (r *request) Request(method string, url string) (*response, error) {
+
+	//记录请求开始时间
+	r.startTime = time.Now()
 
 	req, err := r.dealRequest()
 
@@ -96,7 +103,11 @@ func (r *request) Request(method string, url string) (*response, error) {
 
 	rsp, err := r.do(req)
 
-	return &response{response: rsp}, err
+	r.endTime = time.Now()
+
+	r.responseTime = r.endTime.Sub(r.startTime)
+
+	return r.toResponse(rsp), err
 
 }
 
@@ -124,6 +135,8 @@ func (r *request) GetToContent(url string) (content, error) {
 		return content{content: []byte{}}, err
 
 	}
+
+	//fmt.Println(r.responseTime.Seconds())
 
 	b := r.toBody(rsp.response)
 
@@ -545,8 +558,9 @@ func (r *request) work(r2 *http.Request) (*http.Response, error) {
 func (r *request) toBody(rsp *http.Response) body {
 
 	return body{
-		body:   rsp.Body,
-		header: rsp.Header,
+		body:    rsp.Body,
+		header:  rsp.Header,
+		request: r,
 	}
 
 }
@@ -587,4 +601,12 @@ func (r *request) dealRequest() (*http.Request, error) {
 
 	return req, nil
 
+}
+
+func (r *request) toResponse(rsp *http.Response) *response {
+
+	return &response{
+		response: rsp,
+		request:  r,
+	}
 }

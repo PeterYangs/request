@@ -2,10 +2,12 @@ package request
 
 import (
 	"encoding/json"
+	"time"
 )
 
 type content struct {
 	content []byte
+	request *request
 }
 
 func (c content) ToString() string {
@@ -40,4 +42,10 @@ func (c content) ToJsonStruct(st interface{}) error {
 	}
 
 	return nil
+}
+
+// Time 获取响应时间
+func (c content) Time() time.Duration {
+
+	return c.request.responseTime
 }
