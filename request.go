@@ -91,6 +91,10 @@ func (r *request) Body(b io.Reader) *request {
 // Request 底层请求封装
 func (r *request) Request(method string, url string) (*response, error) {
 
+	r.method = method
+
+	r.url = url
+
 	//记录请求开始时间
 	r.startTime = time.Now()
 
