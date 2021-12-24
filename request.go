@@ -591,7 +591,7 @@ func (r *request) dealRequest() (*http.Request, error) {
 		return nil, err
 	}
 
-	switch r.method {
+	switch strings.ToUpper(r.method) {
 
 	case "POST":
 
