@@ -105,6 +105,8 @@ func main() {
 ```
 
 **post**
+
+Params作为body参数，Query作为url参数
 ```go
 package main
 
