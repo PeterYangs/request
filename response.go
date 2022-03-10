@@ -9,16 +9,17 @@ type response struct {
 	request  *request
 }
 
-func (r *response) Body() body {
+func NewResponse(rsp *http.Response, req *request) *response {
 
-	return body{
-		body:    r.response.Body,
-		header:  r.response.Header,
-		request: r.request,
-	}
+	return &response{rsp, req}
 }
 
 func (r *response) Header() http.Header {
 
 	return r.response.Header
+}
+
+func (r *response) Content() (*content, error) {
+
+	return NewContent(r)
 }

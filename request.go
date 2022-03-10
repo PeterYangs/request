@@ -15,18 +15,18 @@ import (
 
 type request struct {
 	//request    *http.Response
-	client       *Client
-	params       map[string]interface{}
-	query        map[string]interface{}
-	method       string
-	header       map[string]string
-	retryTimes   int
-	timeout      time.Duration
-	url          string
-	body         io.Reader
-	startTime    time.Time
-	endTime      time.Time
-	responseTime time.Duration
+	client     *Client
+	params     map[string]interface{}
+	query      map[string]interface{}
+	method     string
+	header     map[string]string
+	retryTimes int
+	timeout    time.Duration
+	url        string
+	body       io.Reader
+	//startTime    time.Time
+	//endTime      time.Time
+	//responseTime time.Duration
 }
 
 func newRequest(c *Client) *request {
@@ -95,9 +95,6 @@ func (r *request) Request(method string, url string) (*response, error) {
 
 	r.url = url
 
-	//记录请求开始时间
-	r.startTime = time.Now()
-
 	req, err := r.dealRequest()
 
 	if err != nil {
@@ -107,11 +104,7 @@ func (r *request) Request(method string, url string) (*response, error) {
 
 	rsp, err := r.do(req)
 
-	r.endTime = time.Now()
-
-	r.responseTime = r.endTime.Sub(r.startTime)
-
-	return r.toResponse(rsp), err
+	return NewResponse(rsp, r), err
 
 }
 
@@ -126,7 +119,7 @@ func (r *request) Get(url string) (*response, error) {
 
 }
 
-func (r *request) GetToContent(url string) (content, error) {
+func (r *request) GetToContent(url string) (*content, error) {
 
 	r.method = "GET"
 
@@ -136,40 +129,36 @@ func (r *request) GetToContent(url string) (content, error) {
 
 	if err != nil {
 
-		return content{content: []byte{}}, err
+		return nil, err
 
 	}
 
-	//fmt.Println(r.responseTime.Seconds())
-
-	b := r.toBody(rsp.response)
-
-	return b.Content()
+	return NewContent(rsp)
 
 }
 
-func (r *request) GetToContentWithHeader(url string) (content, http.Header, error) {
-
-	r.method = "GET"
-
-	r.url = url
-
-	rsp, err := r.Request(r.method, r.url)
-
-	if err != nil {
-
-		return content{content: []byte{}}, map[string][]string{}, err
-
-	}
-
-	b := r.toBody(rsp.response)
-
-	header := rsp.response.Header
-
-	c, err := b.Content()
-
-	return c, header, err
-}
+//func (r *request) GetToContentWithHeader(url string) (content, http.Header, error) {
+//
+//	r.method = "GET"
+//
+//	r.url = url
+//
+//	rsp, err := r.Request(r.method, r.url)
+//
+//	if err != nil {
+//
+//		return content{content: []byte{}}, map[string][]string{}, err
+//
+//	}
+//
+//	b := r.toBody(rsp.response)
+//
+//	header := rsp.response.Header
+//
+//	c, err := b.Content()
+//
+//	return c, header, err
+//}
 
 func (r *request) Post(url string) (*response, error) {
 
@@ -179,11 +168,13 @@ func (r *request) Post(url string) (*response, error) {
 
 	rsp, err := r.Request(r.method, r.url)
 
-	return &response{response: rsp.response}, err
+	return NewResponse(rsp.response, r), err
+
+	//return &response{response: rsp.response}, err
 
 }
 
-func (r *request) PostToContent(url string) (content, error) {
+func (r *request) PostToContent(url string) (*content, error) {
 
 	r.method = "POST"
 
@@ -193,13 +184,11 @@ func (r *request) PostToContent(url string) (content, error) {
 
 	if err != nil {
 
-		return content{content: []byte{}}, err
+		return nil, err
 
 	}
 
-	b := r.toBody(rsp.response)
-
-	return b.Content()
+	return NewContent(rsp)
 }
 
 func (r *request) Put(url string) (*response, error) {
@@ -210,11 +199,11 @@ func (r *request) Put(url string) (*response, error) {
 
 	rsp, err := r.Request(r.method, r.url)
 
-	return &response{response: rsp.response}, err
+	return NewResponse(rsp.response, r), err
 
 }
 
-func (r *request) PutToContent(url string) (content, error) {
+func (r *request) PutToContent(url string) (*content, error) {
 
 	r.method = "PUT"
 
@@ -224,13 +213,11 @@ func (r *request) PutToContent(url string) (content, error) {
 
 	if err != nil {
 
-		return content{content: []byte{}}, err
+		return nil, err
 
 	}
 
-	b := r.toBody(rsp.response)
-
-	return b.Content()
+	return NewContent(rsp)
 
 }
 
@@ -242,11 +229,11 @@ func (r *request) Delete(url string) (*response, error) {
 
 	rsp, err := r.Request(r.method, r.url)
 
-	return &response{response: rsp.response}, err
+	return NewResponse(rsp.response, r), err
 
 }
 
-func (r *request) DeleteToContent(url string) (content, error) {
+func (r *request) DeleteToContent(url string) (*content, error) {
 
 	r.method = "DELETE"
 
@@ -256,13 +243,13 @@ func (r *request) DeleteToContent(url string) (content, error) {
 
 	if err != nil {
 
-		return content{content: []byte{}}, err
+		return nil, err
 
 	}
 
-	b := r.toBody(rsp.response)
+	//b := r.toBody(rsp.response)
 
-	return b.Content()
+	return NewContent(rsp)
 }
 
 // Download 下载文件
@@ -559,15 +546,15 @@ func (r *request) work(r2 *http.Request) (*http.Response, error) {
 
 }
 
-func (r *request) toBody(rsp *http.Response) body {
-
-	return body{
-		body:    rsp.Body,
-		header:  rsp.Header,
-		request: r,
-	}
-
-}
+//func (r *request) toBody(rsp *http.Response) body {
+//
+//	return body{
+//		body:    rsp.Body,
+//		header:  rsp.Header,
+//		request: r,
+//	}
+//
+//}
 
 func (r *request) dealRequest() (*http.Request, error) {
 
@@ -607,10 +594,10 @@ func (r *request) dealRequest() (*http.Request, error) {
 
 }
 
-func (r *request) toResponse(rsp *http.Response) *response {
-
-	return &response{
-		response: rsp,
-		request:  r,
-	}
-}
+//func (r *request) toResponse(rsp *http.Response) *response {
+//
+//	return &response{
+//		response: rsp,
+//		request:  r,
+//	}
+//}

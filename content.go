@@ -1,13 +1,56 @@
 package request
 
 import (
+	"compress/gzip"
 	"encoding/json"
-	"time"
+	"io"
+	"io/ioutil"
 )
 
 type content struct {
-	content []byte
-	request *request
+	content  []byte
+	response *response
+}
+
+func NewContent(rsp *response) (*content, error) {
+
+	defer rsp.response.Body.Close()
+
+	var err error
+
+	var read io.ReadCloser
+
+	read = rsp.response.Body
+
+	if rsp.response.Header.Get("Content-Encoding") == "gzip" {
+
+		read, err = gzip.NewReader(rsp.response.Body)
+
+		if err != nil {
+
+			return &content{
+				content:  []byte{},
+				response: rsp,
+			}, err
+		}
+
+	}
+
+	bb, err := ioutil.ReadAll(read)
+
+	if err != nil {
+
+		return &content{
+			content:  []byte{},
+			response: rsp,
+		}, err
+	}
+
+	return &content{
+		content:  bb,
+		response: rsp,
+	}, err
+
 }
 
 func (c content) ToString() string {
@@ -44,8 +87,8 @@ func (c content) ToJsonStruct(st interface{}) error {
 	return nil
 }
 
-// Time 获取响应时间
-func (c content) Time() time.Duration {
-
-	return c.request.responseTime
-}
+//// Time 获取响应时间
+//func (c content) Time() time.Duration {
+//
+//	return c.request.responseTime
+//}

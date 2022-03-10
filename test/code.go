@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 	"time"
 )
 

@@ -1,4 +1,4 @@
-module github.com/PeterYangs/request
+module github.com/PeterYangs/request/v2
 
 go 1.16
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 )
 
 func main() {
@@ -30,7 +30,7 @@ func main() {
 	//响应头部
 	//fmt.Println(r.Header())
 
-	content, err := r.Body().Content()
+	content, err := r.Content()
 
 	if err != nil {
 
