@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"net/http"
 )
 
 type content struct {
@@ -53,13 +54,13 @@ func NewContent(rsp *response) (*content, error) {
 
 }
 
-func (c content) ToString() string {
+func (c *content) ToString() string {
 
 	return string(c.content)
 }
 
 // ToJsonMap 转map
-func (c content) ToJsonMap() (map[string]interface{}, error) {
+func (c *content) ToJsonMap() (map[string]interface{}, error) {
 
 	var jsons map[string]interface{}
 
@@ -75,7 +76,7 @@ func (c content) ToJsonMap() (map[string]interface{}, error) {
 }
 
 // ToJsonStruct 转结构体
-func (c content) ToJsonStruct(st interface{}) error {
+func (c *content) ToJsonStruct(st interface{}) error {
 
 	err := json.Unmarshal(c.content, st)
 
@@ -85,6 +86,22 @@ func (c content) ToJsonStruct(st interface{}) error {
 	}
 
 	return nil
+}
+
+func (c *content) Header() http.Header {
+
+	return c.response.Header()
+}
+
+func (c *content) StatusCode() int {
+
+	return c.response.response.StatusCode
+}
+
+// Proto http协议,如HTTP/1.1
+func (c *content) Proto() string {
+
+	return c.response.response.Proto
 }
 
 //// Time 获取响应时间

@@ -27,6 +27,9 @@ func main() {
 		return
 	}
 
-	fmt.Println(content.ToString())
+	//fmt.Println(content.ToString())
+	fmt.Println(content.Header().Get("Connection"))
+	fmt.Println(content.StatusCode())
+	fmt.Println(content.Proto())
 
 }
