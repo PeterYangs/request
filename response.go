@@ -23,3 +23,9 @@ func (r *response) Content() (*content, error) {
 
 	return NewContent(r)
 }
+
+func (r *response) Close() {
+
+	r.response.Body.Close()
+
+}
