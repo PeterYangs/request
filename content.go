@@ -1,8 +1,10 @@
 package request
 
 import (
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"github.com/andybalholm/brotli"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -23,6 +25,8 @@ func NewContent(rsp *response) (*content, error) {
 
 	read = rsp.response.Body
 
+	//rsp.request.isGzip
+
 	if rsp.response.Header.Get("Content-Encoding") == "gzip" {
 
 		read, err = gzip.NewReader(rsp.response.Body)
@@ -34,6 +38,48 @@ func NewContent(rsp *response) (*content, error) {
 				response: rsp,
 			}, err
 		}
+
+		defer read.Close()
+
+	}
+
+	if rsp.response.Header.Get("Content-Encoding") == "br" {
+
+		//存放结果
+		result := bytes.NewBuffer(nil)
+
+		defer result.Reset()
+
+		buf := make([]byte, 1024)
+
+		r := brotli.NewReader(rsp.response.Body)
+
+		for {
+
+			l, rErr := r.Read(buf)
+
+			if rErr != nil {
+
+				if rErr == io.EOF {
+
+					break
+
+				}
+
+				return &content{
+					content:  []byte{},
+					response: rsp,
+				}, rErr
+			}
+
+			result.Write(buf[:l])
+
+		}
+
+		return &content{
+			content:  result.Bytes(),
+			response: rsp,
+		}, nil
 
 	}
 
