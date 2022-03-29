@@ -38,8 +38,8 @@ func main() {
 
 ```
 
-
 **get**
+
 ```go
 package main
 
@@ -61,8 +61,7 @@ func main() {
 		return
 	}
 
-	
-	content, err := r.Body().Content()
+	content, err := r.Content()
 
 	if err != nil {
 
@@ -75,7 +74,9 @@ func main() {
 
 }
 ```
+
 或者直接读取结果
+
 ```go
 package main
 
@@ -107,6 +108,7 @@ func main() {
 **post**
 
 Params作为body参数，Query作为url参数
+
 ```go
 package main
 
@@ -137,7 +139,7 @@ func main() {
 		return
 	}
 
-	content, err := r.Body().Content()
+	content, err := r.Content()
 
 	if err != nil {
 
@@ -152,6 +154,7 @@ func main() {
 ```
 
 **header**
+
 ```go
 package main
 
@@ -181,6 +184,7 @@ func main() {
 ```
 
 **proxy**
+
 ```go
 package main
 
@@ -207,10 +211,10 @@ func main() {
 }
 ```
 
-
 **download**
 
 下载
+
 ```go
 package main
 
@@ -237,6 +241,7 @@ func main() {
 **reTry**
 
 重试
+
 ```go
 package main
 
@@ -265,6 +270,7 @@ func main() {
 ```
 
 **upload**
+
 ```go
 package main
 
@@ -293,6 +299,7 @@ func main() {
 ```
 
 **自定义body**
+
 ```go
 package main
 
@@ -305,7 +312,7 @@ import (
 func main() {
 
 	client := request.NewClient()
-    //设置body后，Params将失效
+	//设置body后，Params将失效
 	content, err := client.R().Body(strings.NewReader("name=123&age=18")).PostToContent("http://list.com/demo/post.php")
 
 	if err != nil {
