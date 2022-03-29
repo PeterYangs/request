@@ -5,7 +5,7 @@ http请求库
 **安装**
 
 ```shell
-go get github.com/PeterYangs/request
+go get github.com/PeterYangs/request/v2
 ```
 
 **快速开始**
@@ -15,7 +15,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 )
 
 func main() {
@@ -45,7 +45,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 )
 
 func main() {
@@ -81,7 +81,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 )
 
 func main() {
@@ -112,7 +112,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 )
 
 func main() {
@@ -157,7 +157,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 )
 
 func main() {
@@ -186,7 +186,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 )
 
 func main() {
@@ -216,7 +216,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 )
 
 func main() {
@@ -242,7 +242,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 )
 
 func main() {
@@ -270,7 +270,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 )
 
 func main() {
@@ -298,7 +298,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/PeterYangs/request"
+	"github.com/PeterYangs/request/v2"
 	"strings"
 )
 
