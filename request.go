@@ -24,7 +24,7 @@ type request struct {
 	timeout    time.Duration
 	url        string
 	body       io.Reader
-	isGzip     bool
+	//isGzip     bool
 }
 
 func newRequest(c *Client) *request {
@@ -78,19 +78,19 @@ func (r *request) Timeout(timeout time.Duration) *request {
 
 }
 
-func (r *request) Gzip() *request {
-
-	r.isGzip = true
-
-	return r
-}
-
-func (r *request) DisableGzip() *request {
-
-	r.isGzip = false
-
-	return r
-}
+//func (r *request) Gzip() *request {
+//
+//	r.isGzip = true
+//
+//	return r
+//}
+//
+//func (r *request) DisableGzip() *request {
+//
+//	r.isGzip = false
+//
+//	return r
+//}
 
 // Body body设置后，Params会失效
 func (r *request) Body(b io.Reader) *request {
@@ -517,13 +517,13 @@ func (r *request) do(r2 *http.Request) (*http.Response, error) {
 
 			msg := ""
 
-			if r.client.debug {
+			//if r.client.debug {
 
-				b, _ := ioutil.ReadAll(rsp.Body)
+			b, _ := ioutil.ReadAll(rsp.Body)
 
-				msg = "\n" + string(b)
+			msg = "\n" + string(b)
 
-			}
+			//}
 
 			rsp.Body.Close()
 
