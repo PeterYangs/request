@@ -282,7 +282,75 @@ func (r *request) Download(url string, savePath string) error {
 		return err
 	}
 
+	//fmt.Println(rsp.Header().Get("Content-Type"))
+
 	defer rsp.response.Body.Close()
+
+	f, err := os.Create(savePath + ".temp")
+
+	if err != nil {
+
+		return err
+	}
+
+	defer func() {
+
+		os.Remove(savePath + ".temp")
+
+	}()
+
+	_, err = io.Copy(f, rsp.response.Body)
+
+	if err != nil {
+
+		f.Close()
+
+		return err
+	}
+
+	f.Close()
+
+	if err = os.Rename(savePath+".temp", savePath); err != nil {
+
+		return err
+	}
+
+	return nil
+}
+
+func (r *request) DownloadCheckType(url string, savePath string, types []string) error {
+
+	r.method = "GET"
+
+	r.url = url
+
+	rsp, err := r.Request(r.method, r.url)
+
+	if err != nil {
+
+		return err
+	}
+
+	//fmt.Println()
+
+	defer rsp.response.Body.Close()
+
+	contentType := rsp.Header().Get("Content-Type")
+
+	isFind := false
+
+	for _, s := range types {
+
+		if strings.Contains(contentType, s) {
+
+			isFind = true
+		}
+	}
+
+	if !isFind {
+
+		return errors.New("类型检查失败：" + contentType)
+	}
 
 	f, err := os.Create(savePath + ".temp")
 
