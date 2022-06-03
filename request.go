@@ -384,6 +384,25 @@ func (r *request) DownloadCheckType(url string, savePath string, types []string)
 	return nil
 }
 
+// GetLastRedirectUrl 获取最终重定向链接
+func (r *request) GetLastRedirectUrl(url string) (string, error) {
+
+	r.method = "GET"
+
+	r.url = url
+
+	rsp, err := r.Request(r.method, r.url)
+
+	if err != nil {
+
+		return "", err
+	}
+
+	defer rsp.response.Body.Close()
+
+	return rsp.response.Request.URL.String(), nil
+}
+
 // Upload 文件上传
 func (r *request) Upload(url string, filePath ...string) (content, error) {
 
