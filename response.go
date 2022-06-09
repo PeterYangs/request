@@ -19,6 +19,11 @@ func (r *response) Header() http.Header {
 	return r.response.Header
 }
 
+func (r *response) GetResponse() *http.Response {
+
+	return r.response
+}
+
 func (r *response) Content() (*content, error) {
 
 	return NewContent(r)
