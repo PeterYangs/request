@@ -105,6 +105,11 @@ func (c *content) ToString() string {
 	return string(c.content)
 }
 
+func (c *content) ToByte() []byte {
+
+	return c.content
+}
+
 // ToJsonMap 转map
 func (c *content) ToJsonMap() (map[string]interface{}, error) {
 
