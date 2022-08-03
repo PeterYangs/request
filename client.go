@@ -12,12 +12,14 @@ type Client struct {
 	timeout    time.Duration
 	retryTimes int
 	debug      bool
+	transport  *http.Transport
 }
 
 func NewClient() *Client {
 
 	return &Client{
-		client: &http.Client{},
+		client:    &http.Client{},
+		transport: http.DefaultTransport.(*http.Transport).Clone(),
 	}
 }
 
@@ -31,12 +33,20 @@ func (c *Client) Header(header map[string]string) *Client {
 
 func (c *Client) Proxy(proxyUrl string) *Client {
 
-	c.client.Transport = &http.Transport{
-		Proxy: func(r *http.Request) (*url.URL, error) {
+	//c.client.Transport = &http.Transport{
+	//	Proxy: func(r *http.Request) (*url.URL, error) {
+	//
+	//		return url.Parse(proxyUrl)
+	//	},
+	//	MaxConnsPerHost: 10,
+	//}
 
-			return url.Parse(proxyUrl)
-		},
+	c.transport.Proxy = func(r *http.Request) (*url.URL, error) {
+
+		return url.Parse(proxyUrl)
 	}
+
+	c.transport.MaxConnsPerHost = 10
 
 	return c
 }
@@ -65,7 +75,14 @@ func (c *Client) Debug() *Client {
 
 }
 
+func (c *Client) GetTransport() *http.Transport {
+
+	return c.transport
+}
+
 func (c *Client) R() *request {
+
+	c.client.Transport = c.transport
 
 	return newRequest(c)
 }
