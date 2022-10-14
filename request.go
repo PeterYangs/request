@@ -1,11 +1,13 @@
 package request
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"github.com/PeterYangs/tools"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"strconv"
@@ -78,20 +80,6 @@ func (r *request) Timeout(timeout time.Duration) *request {
 
 }
 
-//func (r *request) Gzip() *request {
-//
-//	r.isGzip = true
-//
-//	return r
-//}
-//
-//func (r *request) DisableGzip() *request {
-//
-//	r.isGzip = false
-//
-//	return r
-//}
-
 // Body body设置后，Params会失效
 func (r *request) Body(b io.Reader) *request {
 
@@ -149,29 +137,6 @@ func (r *request) GetToContent(url string) (*content, error) {
 
 }
 
-//func (r *request) GetToContentWithHeader(url string) (content, http.Header, error) {
-//
-//	r.method = "GET"
-//
-//	r.url = url
-//
-//	rsp, err := r.Request(r.method, r.url)
-//
-//	if err != nil {
-//
-//		return content{content: []byte{}}, map[string][]string{}, err
-//
-//	}
-//
-//	b := r.toBody(rsp.response)
-//
-//	header := rsp.response.Header
-//
-//	c, err := b.Content()
-//
-//	return c, header, err
-//}
-
 func (r *request) Post(url string) (*response, error) {
 
 	r.method = "POST"
@@ -184,6 +149,35 @@ func (r *request) Post(url string) (*response, error) {
 
 	//return &response{response: rsp.response}, err
 
+}
+
+func (r *request) PostMultipart(url string) (*response, error) {
+
+	r.method = "PostMultipart"
+
+	r.url = url
+
+	rsp, err := r.Request(r.method, r.url)
+
+	return NewResponse(rsp.response, r), err
+
+}
+
+func (r *request) PostMultipartToContent(url string) (*content, error) {
+
+	r.method = "PostMultipart"
+
+	r.url = url
+
+	rsp, err := r.Request(r.method, r.url)
+
+	if err != nil {
+
+		return nil, err
+
+	}
+
+	return NewContent(rsp)
 }
 
 func (r *request) PostToContent(url string) (*content, error) {
@@ -502,6 +496,8 @@ func (r *request) resolveInterface(p map[string]interface{}, form string, parent
 
 				form = r.resolveInterface(key, form, t)
 
+				//case *os.File:
+
 			}
 
 		}
@@ -645,31 +641,28 @@ func (r *request) work(r2 *http.Request) (*http.Response, error) {
 
 }
 
-//func (r *request) toBody(rsp *http.Response) body {
-//
-//	return body{
-//		body:    rsp.Body,
-//		header:  rsp.Header,
-//		request: r,
-//	}
-//
-//}
-
 func (r *request) dealRequest() (*http.Request, error) {
 
 	query, params := r.dealParamsAndQuery()
 
 	var req *http.Request
 
+	var body io.Reader
+
 	var err error
 
 	if r.body != nil {
 
-		req, err = http.NewRequest(r.method, r.url+query, r.body)
+		//req, err = http.NewRequest(r.method, r.url+query, r.body)
+
+		body = r.body
 
 	} else {
 
-		req, err = http.NewRequest(r.method, r.url+query, strings.NewReader(params))
+		//req, err = http.NewRequest(r.method, r.url+query, )
+
+		body = strings.NewReader(params)
+
 	}
 
 	if err != nil {
@@ -681,11 +674,119 @@ func (r *request) dealRequest() (*http.Request, error) {
 
 	case "POST":
 
+		req, err = http.NewRequest(r.method, r.url+query, body)
+
+		if err != nil {
+
+			return nil, err
+		}
+
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	case "PUT":
 
+		req, err = http.NewRequest(r.method, r.url+query, body)
+
+		if err != nil {
+
+			return nil, err
+		}
+
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	case "POSTMULTIPART":
+
+		//panic("1111")
+
+		buf := new(bytes.Buffer)
+		bw := multipart.NewWriter(buf) // body writer
+
+		for s, i := range r.params {
+
+			switch value := i.(type) {
+
+			case string:
+
+				field, _ := bw.CreateFormField(s)
+
+				field.Write([]byte(value))
+
+			case int64:
+
+				field, _ := bw.CreateFormField(s)
+
+				field.Write([]byte(strconv.Itoa(int(value))))
+
+			case int32:
+
+				field, _ := bw.CreateFormField(s)
+
+				field.Write([]byte(strconv.Itoa(int(value))))
+
+			case int8:
+
+				field, _ := bw.CreateFormField(s)
+
+				field.Write([]byte(strconv.Itoa(int(value))))
+
+			case int:
+				field, _ := bw.CreateFormField(s)
+
+				field.Write([]byte(strconv.Itoa(value)))
+
+			case *os.File:
+
+				field, _ := bw.CreateFormFile(s, value.Name())
+
+				io.Copy(field, value)
+
+			}
+
+		}
+
+		//f, err := os.Open("source_url.txt")
+		//
+		//if err != nil {
+		//	return nil, err
+		//}
+		//defer f.Close()
+		//
+		//// text part1
+		//p1w, _ := bw.CreateFormField("name")
+		//p1w.Write([]byte("Tony Bai"))
+		//
+		//// text part2
+		//p2w, _ := bw.CreateFormField("age")
+		//p2w.Write([]byte("15"))
+		//
+		//// file part1
+		//fileName := "source_url.txt"
+		//fw1, _ := bw.CreateFormFile("file1", fileName)
+		//io.Copy(fw1, f)
+
+		bw.Close() //write the tail boundry
+
+		//body = buf
+
+		req, err = http.NewRequest("POST", r.url+query, buf)
+
+		//panic(r.url + query)
+
+		if err != nil {
+
+			return nil, err
+		}
+
+		req.Header.Set("Content-Type", bw.FormDataContentType())
+
+	default:
+
+		req, err = http.NewRequest(r.method, r.url+query, body)
+
+		if err != nil {
+
+			return nil, err
+		}
 
 	}
 
